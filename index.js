@@ -12,11 +12,13 @@ module.exports = function (config, stuff) {
 
   return {
     authenticate: function (user, password, callback) {
-      if (allowList.includes(user)) {
+      console.log('auth user: ', user)
+      console.log('auth allowList: ', allowList)
+      // if (allowList.includes(user)) {
         stuff.logger.warn(`Allowing access to: ${user}`)
         callback(null, [user])
         return
-      }
+      // }
 
       // do nothing: go to next auth plugin configured
       callback(null, null)
@@ -38,19 +40,22 @@ module.exports = function (config, stuff) {
 
           if (token) {
             const response = await axios.post('https://httpbin.org/post', { token });
-            console.log('response: ', response);
+            console.log('response status: ', response.status);
 
             if (response.status === 200) {
               stuff.logger.warn('Applying custom token')
               const { user, password } = accessTokens.values().next().value || {};
               console.log('user: ', user)
               console.log('password: ', password)
-              req.headers.authorization = buildAesAuthToken(user || '', password || '');
+              const auth = buildAesAuthToken(user || '', password || '');
+              console.log('auth: ', auth);
+              req.headers.authorization = auth;
             }
           }
         } catch(err) {
-          console.log('error: ', err);
-          next();
+          console.log('error msg: ', err);
+          console.log('error stack: ', err.stack);
+          console.log('error cause: ', err.cause);
         }
 
         next();
