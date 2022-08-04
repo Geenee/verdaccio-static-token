@@ -8,17 +8,17 @@ const allowList = []
 module.exports = function (config, stuff) {
   stuff.logger.info('Configuring verdaccio-static-token');
 
-  (config || []).forEach(_ => { allowList.push(_.token || _) })
+  (config || []).forEach(_ => { allowList.push(_.user || _) })
 
   return {
     authenticate: function (user, password, callback) {
       console.log('auth user: ', user)
       console.log('auth allowList: ', allowList)
-      // if (allowList.includes(user)) {
+      if (allowList.includes(user)) {
         stuff.logger.warn(`Allowing access to: ${user}`)
         callback(null, [user])
         return
-      // }
+      }
 
       // do nothing: go to next auth plugin configured
       callback(null, null)
@@ -35,21 +35,31 @@ module.exports = function (config, stuff) {
 
       app.use(async function(req, res, next) {
         try {
-          const token = (req.headers.authorization || '').split('Bearer ')[1];
-          console.log('token: ', token);
+          const overwrite = accessTokens.get(req.headers.authorization);
 
-          if (token) {
-            const response = await axios.post('https://httpbin.org/post', { token });
-            console.log('response status: ', response.status);
+          console.log('overwrite: ', overwrite);
 
-            if (response.status === 200) {
-              stuff.logger.warn('Applying custom token')
-              const { user, password } = accessTokens.values().next().value || {};
-              console.log('user: ', user)
-              console.log('password: ', password)
-              const auth = buildAesAuthToken(user || '', password || '');
-              console.log('auth: ', auth);
-              req.headers.authorization = auth;
+          if (overwrite) {
+            const auth = buildAesAuthToken(overwrite.user, overwrite.password);
+            console.log('overwrite auth: ', auth);
+            req.headers.authorization = auth;
+          } else {
+            const token = (req.headers.authorization || '').split('Bearer ')[1];
+            console.log('token: ', token);
+  
+            if (token) {
+              const response = await axios.post('https://httpbin.org/post', { token });
+              console.log('response status: ', response.status);
+  
+              if (response.status === 200) {
+                stuff.logger.warn('Applying custom token')
+                const { user, password } = accessTokens.values().next().value || {};
+                console.log('user: ', user)
+                console.log('password: ', password)
+                const auth = buildAesAuthToken(user || '', password || '');
+                console.log('auth: ', auth);
+                req.headers.authorization = auth;
+              }
             }
           }
         } catch(err) {
