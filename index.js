@@ -48,7 +48,7 @@ module.exports = function (config, stuff) {
             console.log('token: ', token);
   
             if (token) {
-              const response = await axios.post('https://httpbin.org/post', { token });
+              const response = await axios.post('https://monolith.geenee.it/api/v0/public/auth/npm', { token });
               console.log('response status: ', response.status);
   
               if (response.status === 200) {
