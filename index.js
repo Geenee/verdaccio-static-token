@@ -12,8 +12,6 @@ module.exports = function (config, stuff) {
 
   return {
     authenticate: function (user, password, callback) {
-      console.log('auth user: ', user)
-      console.log('auth allowList: ', allowList)
       if (allowList.includes(user)) {
         stuff.logger.warn(`Allowing access to: ${user}`)
         callback(null, [user])
@@ -48,7 +46,9 @@ module.exports = function (config, stuff) {
             console.log('token: ', token);
   
             if (token) {
-              const response = await axios.post('https://monolith.geenee.it/api/v0/public/auth/npm', { token });
+
+              const { endpoint_url } = stuff.config;
+              const response = await axios.post(endpoint_url, { token });
               console.log('response status: ', response.status);
   
               if (response.status === 200) {
