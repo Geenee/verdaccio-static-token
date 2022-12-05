@@ -21,6 +21,12 @@ module.exports = function (config, stuff) {
       // do nothing: go to next auth plugin configured
       callback(null, null)
     },
+    allow_access: function (user, pkg, cb) {
+      console.log('USER: ', user);
+      console.log('PACKAGE: ', pkg);
+
+      cb(null, false);
+    },
     register_middlewares: function (app, authInstance, storageInstance) {
       console.log('middy register_middlewares')
 
